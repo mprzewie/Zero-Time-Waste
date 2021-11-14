@@ -418,6 +418,7 @@ def load_params(models_path, model_name, epoch=0):
     else:
         params_path = params_path + '/parameters_last'
 
+    print("Loading params from", params_path)
     with open(params_path, 'rb') as f:
         model_params = pickle.load(f)
     return model_params
@@ -464,7 +465,18 @@ def load_model(args, models_path, model_name, epoch=0):
     else:
         load_path = network_path + '/' + str(epoch)
 
-    model.load_state_dict(torch.load(load_path), strict=False)
+    load_state_dict = torch.load(load_path)
+    model_state_dict = model.state_dict()
+    keys_to_del = []
+    for k, v in load_state_dict.items():
+        if k in model_state_dict:
+            if model_state_dict[k].shape != v.shape:
+                print("Size mismatch for", k, model_state_dict[k].shape, "vs", v.shape, "this param will be omitted")
+                keys_to_del.append(k)
+    for k in  keys_to_del:
+        del load_state_dict[k]
+
+    model.load_state_dict(load_state_dict, strict=False)
 
     return model, model_params
 

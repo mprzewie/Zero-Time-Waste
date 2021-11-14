@@ -45,6 +45,7 @@ def train(args, models_path, untrained_models, sdn=False, run_ensb=False, ic_onl
     print('Training models...')
 
     for base_model in untrained_models:
+        print("Training", base_model)
         trained_model, model_params = arcs.load_model(args, models_path, base_model, 0)
         dataset = af.get_dataset(args, model_params['task'])
 
@@ -141,11 +142,15 @@ def train_sdns(args, models_path, networks, ic_only=False, device='cpu'):
         load_epoch = 0
 
     for sdn_name in networks:
+        print("Loading SDN", models_path, sdn_name)
         sdn_params = arcs.load_params(models_path, sdn_name)
         sdn_params = arcs.get_net_params(args, sdn_params['network_type'], sdn_params['task'])
         cnn_to_tune = f"{sdn_params['task']}_{sdn_params['network_type']}_cnn"
-        sdn_model, _ = af.cnn_to_sdn(args, models_path, cnn_to_tune, sdn_params,
-                                     load_epoch)  # load the CNN and convert it to a SDN
+        if args.override_cnn_to_tune is not None:
+            cnn_to_tune = args.override_cnn_to_tune
+
+        print("Finetuning", cnn_to_tune)
+        sdn_model, _ = af.cnn_to_sdn(args, models_path, cnn_to_tune, sdn_params, load_epoch)  # load the CNN and convert it to a SDN
         arcs.save_model(args, sdn_model, sdn_params, models_path, sdn_name, epoch=0)  # save the resulting SDN
     train(args, models_path, networks, sdn=True, ic_only_sdn=ic_only, device=device)
 
@@ -340,5 +345,6 @@ if __name__ == '__main__':
     parser.add_argument('--tag', type=str, help="Additional tag for neptune")
     parser.add_argument('--suffix', type=str, help="Suffix for model name")
     parser.add_argument('--relearn_final_layer', action='store_true')
+    parser.add_argument("--override_cnn_to_tune", type=str, default=None, help="Override CNN to finetune in SDN training")
     args = parser.parse_args()
     main(args)
