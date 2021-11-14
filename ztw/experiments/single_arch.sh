@@ -37,9 +37,9 @@ if [[ $arch == "tv_resnet" ]]; then
   done
 else
   python train_networks.py -d $dataset -a $arch -t cnn -s $seed --heads all --tag "${seed}_${dataset}_${arch}_base_cnn" --skip_train_logits --save_test_logits
-  python train_networks.py -d $dataset -a $arch -t sdn_ic -s $seed --head_arch conv sdn_pool --heads all --save_test_logits --skip_train_logits --tag "${seed}_${dataset}_${arch}_sdn_baseline" &
-  python train_networks.py -d $dataset -a $arch -t sdn_ic -s $seed --head_arch conv sdn_pool --heads all --stacking --detach_prev --save_test_logits --skip_train_logits --tag "${seed}_${dataset}_${arch}_heads" &
-  wait
+  python train_networks.py -d $dataset -a $arch -t sdn_ic -s $seed --head_arch conv sdn_pool --heads all --save_test_logits --skip_train_logits --tag "${seed}_${dataset}_${arch}_sdn_baseline" #&
+  python train_networks.py -d $dataset -a $arch -t sdn_ic -s $seed --head_arch conv sdn_pool --heads all --stacking --detach_prev --save_test_logits --skip_train_logits --tag "${seed}_${dataset}_${arch}_heads" #&
+  #wait
   for head_id in $(seq 0 $heads); do
     python train_networks.py -d $dataset -a $arch -t running_ensb -s $seed --head_arch conv sdn_pool --save_test_logits --skip_train_logits --stacking --detach_prev --head_ids $head_id --alpha 0. --tag "${seed}_${dataset}_${arch}_running_ensb" --parent_id "child_of_${seed}_${dataset}_${arch}_heads" --heads all &
     if ! (( (head_id + 1) % 2)); then
