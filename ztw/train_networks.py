@@ -47,6 +47,7 @@ def train(args, models_path, untrained_models, sdn=False, run_ensb=False, ic_onl
     for base_model in untrained_models:
         print("Training", base_model)
         trained_model, model_params = arcs.load_model(args, models_path, base_model, 0)
+        print(model_params)
         dataset = af.get_dataset(args, model_params['task'])
 
         learning_rate = model_params['learning_rate']

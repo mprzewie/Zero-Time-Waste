@@ -68,7 +68,8 @@ def sdn_ic_only_step(args, optimizer, model, batch, device, run_i=None):
     output_idx = 0
     for ensemble_id, cur_ensemble in enumerate(output):
         if ensemble_id == model.num_output - 1:  # last output
-            break
+            cur_ensemble = [cur_ensemble]
+
         for output_id, cur_output in enumerate(cur_ensemble):
             if args.loss == 'ce_kd':
                 p = F.log_softmax(cur_output / args.temperature, dim=1)

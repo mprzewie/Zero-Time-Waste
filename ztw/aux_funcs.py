@@ -402,7 +402,9 @@ def get_sdn_ic_only_optimizer(model, lr_params, stepsize_params):
 
     milestones = stepsize_params[0]
     gammas = stepsize_params[1]
-
+    print("I will optimize", [
+        p_name for (p_name, p) in model.named_parameters() if p.requires_grad
+    ], "with lr params", lr_params)
     optimizer = Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=lr, weight_decay=weight_decay)
     scheduler = MultiStepMultiLR(optimizer, milestones=milestones, gammas=gammas)
 

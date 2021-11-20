@@ -160,6 +160,7 @@ class VGG_SDN(nn.Module):
 
             conv_params = (input_channel, channel, self.max_pool_sizes[layer_id], self.conv_batch_norm)
             add_output = self.add_output[layer_id]
+            print("Layer", layer_id, "conv channel", channel, "output", add_output)
             output_params = (add_output, self.num_classes, cur_input_size, output_id)
 
             prev_dim = 0 if self.first_internal or not self.args.stacking else self.num_classes
@@ -184,6 +185,8 @@ class VGG_SDN(nn.Module):
                 flatten = True
 
             add_output = self.add_output[layer_id + len(self.conv_channels)]
+            print("Layer", layer_id + len(self.conv_channels), "FC width", width, "output", add_output)
+
             output_params = (add_output, self.num_classes, output_id)
             prev_dim = 0 if self.first_internal or not self.args.stacking else self.num_classes
             self.layers.append(FcBlockWOutput(args, fc_params, output_params, flatten=flatten, prev_dim=prev_dim))
