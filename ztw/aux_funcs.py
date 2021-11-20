@@ -584,6 +584,7 @@ def freeze_bn(module, freeze=True):
 
 
 def freeze(model, mode, boosting=False):
+    print("Freezing", mode, boosting)
     if mode == 'except_core':
         for name, param in model.named_parameters():
             if 'output' in name:
@@ -594,12 +595,12 @@ def freeze(model, mode, boosting=False):
             freeze_bn(module, 'output' in name)
     elif mode == 'except_outputs':
         for name, param in model.named_parameters():
-            if 'output' in name:
+            if 'output' in name or "end_layers" in name:
                 param.requires_grad = True
             else:
                 param.requires_grad = False
         for name, module in model.named_modules():
-            freeze_bn(module, 'output' not in name)
+            freeze_bn(module, 'output' not in name and "end_layers" not in name)
     elif isinstance(mode, int):
         if boosting:
             current_head = -1

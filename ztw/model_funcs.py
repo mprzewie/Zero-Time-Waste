@@ -288,7 +288,6 @@ def confidence_weights(args, model, data, head_i, device):
 
 def sdn_train(args, model, data, epochs, optimization_params, lr_schedule_params, device='cpu'):
     global current_step
-    print(model)
     metrics = {
         'epoch_times': [],
         'test_top1_acc': [],
