@@ -596,8 +596,10 @@ def freeze(model, mode, boosting=False):
     elif mode == 'except_outputs':
         for name, param in model.named_parameters():
             if 'output' in name or "end_layers" in name:
+                print("Not freezing", name)
                 param.requires_grad = True
             else:
+                print("Freezing", name)
                 param.requires_grad = False
         for name, module in model.named_modules():
             freeze_bn(module, 'output' not in name and "end_layers" not in name)
