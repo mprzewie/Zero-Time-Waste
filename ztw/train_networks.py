@@ -227,6 +227,8 @@ def train_models(args, steps, task, models, models_path, device='cpu'):
     sdns = []
 
     save_type = 'cd' if args.head_arch is not None else 'c'
+    if args.override_cnn_to_tune is not None:
+        save_type = save_type + "o"
 
     if 'vgg16bn' in models:
         af.extend_lists(cnns, sdns, arcs.create_vgg16bn(args, models_path, task, save_type=save_type))

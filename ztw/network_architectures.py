@@ -63,6 +63,11 @@ def save_networks(args, model_name, model_params, models_path, save_type):
         elif 'mobilenet' in network_type:
             model = MobileNet(args, model_params)
 
+        if "o" in save_type:
+            model2, _ = load_model(args, models_path, args.override_cnn_to_tune, -1)
+            assert isinstance(model2, type(model)), (type(model), type(model2))
+            model = model2
+
         save_model(args, model, model_params, models_path, cnn_name, epoch=0)
 
     if 'd' in save_type:
