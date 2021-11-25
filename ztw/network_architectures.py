@@ -44,6 +44,8 @@ def args_model_params(args, model_params):
 
 def save_networks(args, model_name, model_params, models_path, save_type):
     cnn_name = model_name + '_cnn'
+    if args.suffix != "":
+        cnn_name = f"{cnn_name}_{args.suffix}"
     sdn_name = canonical_name(args, model_name)
 
     if 'c' in save_type:
