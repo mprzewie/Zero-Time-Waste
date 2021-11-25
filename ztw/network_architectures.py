@@ -64,6 +64,7 @@ def save_networks(args, model_name, model_params, models_path, save_type):
             model = MobileNet(args, model_params)
 
         if "o" in save_type:
+            print("Loading weights from", args.override_cnn_to_tune)
             model2, _ = load_model(args, models_path, args.override_cnn_to_tune, -1)
             assert isinstance(model2, type(model)), (type(model), type(model2))
             model = model2

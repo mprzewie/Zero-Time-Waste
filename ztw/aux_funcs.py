@@ -387,6 +387,10 @@ def get_full_optimizer(model, lr_params, stepsize_params):
     milestones = stepsize_params[0]
     gammas = stepsize_params[1]
 
+    print("I will optimize", [
+        p_name for (p_name, p) in model.named_parameters() if p.requires_grad
+    ], "with lr params", lr_params)
+    
     optimizer = SGD(filter(lambda p: p.requires_grad, model.parameters()),
                     lr=lr,
                     momentum=momentum,
