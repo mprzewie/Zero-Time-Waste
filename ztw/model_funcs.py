@@ -630,9 +630,14 @@ def cnn_train(args, model, data, epochs, optimization_params, lr_schedule_params
         'train_top5_acc': [],
         'lrs': []
     }
-    if args.relearn_final_layer:
+    if args.freeze_cnn_up_to is not None:
+        print(f"Freezing the CNN up to block # {args.freeze_cnn_up_to}")
+        af.freeze(model, ("cnn_up_to", args.freeze_cnn_up_to))
+
+    elif args.relearn_final_layer:
         print(f'Training only the (new) final layer/module!')
         af.freeze(model, 'final_layer_only')
+
     optimizer, scheduler = af.get_full_optimizer(model, optimization_params, lr_schedule_params)
 
     for epoch in range(1, epochs + 1):

@@ -41,11 +41,20 @@ def get_logits(args, model, loader, device='cpu'):
     return all_logits, all_last_logits, all_labels
 
 
-def train(args, models_path, untrained_models, sdn=False, run_ensb=False, ic_only_sdn=False, tags=[], device='cpu'):
+def train(args, models_path, untrained_models, sdn=False, run_ensb=False, ic_only_sdn=False, tags=None, device='cpu'):
     print('Training models...')
-
+    tags = tags or []
     for base_model in untrained_models:
         print("Training", base_model)
+        # Add neptune tag for easier experiment management
+        if args.tag:
+            tags += [args.tag]
+        run = neptune.init(name=base_model,
+                           source_files='*.py',
+                           tags=tags)
+        run['parameters'] = vars(args)
+
+        args.run = run
         trained_model, model_params = arcs.load_model(args, models_path, base_model, 0)
         print(model_params)
         dataset = af.get_dataset(args, model_params['task'])
@@ -75,16 +84,6 @@ def train(args, models_path, untrained_models, sdn=False, run_ensb=False, ic_onl
 
         trained_model_name = base_model
 
-        # Add neptune tag for easier experiment management
-        if args.tag:
-            tags += [args.tag]
-
-        print('Training: {}...'.format(trained_model_name))
-        run = neptune.init(name=trained_model_name,
-                           source_files='*.py',
-                           tags=tags)
-        run['parameters'] = vars(args)
-        args.run = run
         trained_model.to(device)
         results = trained_model.train_func(args,
                                            trained_model,
@@ -348,6 +347,7 @@ if __name__ == '__main__':
     parser.add_argument('--tag', type=str, help="Additional tag for neptune")
     parser.add_argument('--suffix', type=str, help="Suffix for model name")
     parser.add_argument('--relearn_final_layer', action='store_true')
-    parser.add_argument("--override_cnn_to_tune", type=str, default=None, help="Override CNN to finetune in SDN training")
+    parser.add_argument("--override_cnn_to_tune", type=str, default=None, help="Override CNN to finetune in training")
+    parser.add_argument("--freeze_cnn_up_to", type=int, default=None, help="Freeze cnn up to n-th block in CNN training")
     args = parser.parse_args()
     main(args)

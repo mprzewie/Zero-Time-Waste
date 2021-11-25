@@ -674,5 +674,12 @@ def freeze(model, mode, boosting=False):
         ord_modules = list(model.modules())
         for param in ord_modules[-1].parameters():
             param.requires_grad = True
+    elif mode[0] == "cnn_up_to":
+        up_to = mode[1]
+        for i, layer in enumerate(model.layers[:up_to]):
+            print("Freezing", i, layer)
+            for param in layer.parameters():
+                param.requires_grad = False
+
     else:
         raise ValueError(f'mode argument value incorrect: {mode}')
