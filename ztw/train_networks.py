@@ -349,5 +349,6 @@ if __name__ == '__main__':
     parser.add_argument('--relearn_final_layer', action='store_true')
     parser.add_argument("--override_cnn_to_tune", type=str, default=None, help="Override CNN to finetune in training")
     parser.add_argument("--freeze_cnn_up_to", type=int, default=None, help="Freeze cnn up to n-th block in CNN training")
+    parser.add_argument("--override_cnn_up_to", type=int, default=None, help="Override cnn up to n-th block in CNN training")
     args = parser.parse_args()
     main(args)

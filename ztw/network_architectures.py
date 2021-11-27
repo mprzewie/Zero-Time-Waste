@@ -69,7 +69,23 @@ def save_networks(args, model_name, model_params, models_path, save_type):
             print("Loading weights from", args.override_cnn_to_tune)
             model2, _ = load_model(args, models_path, args.override_cnn_to_tune, -1)
             assert isinstance(model2, type(model)), (type(model), type(model2))
-            model = model2
+            m2_state_dict = model2.state_dict()
+            if args.override_cnn_up_to is not None:
+                substrings = [
+                    f"layers.{i}."
+                    for i in range(args.override_cnn_up_to)
+                ]
+                m2_state_dict = {
+                    k: v
+                    for (k,v) in m2_state_dict.items()
+                    if any([k.startswith(s) for s in substrings])
+                }
+
+            print(f"I will override the following parameters of {cnn_name} with params from {args.override_cnn_to_tune}")
+            print(m2_state_dict.keys())
+
+            model.load_state_dict(m2_state_dict, strict=False)
+
 
         save_model(args, model, model_params, models_path, cnn_name, epoch=0)
 
