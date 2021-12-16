@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -xe
 #SBATCH --job-name=std_devs
 #SBATCH --qos=normal
 #SBATCH --gres=gpu:1
