@@ -139,7 +139,8 @@ def train_sdns(args, models_path, networks, ic_only=False, device='cpu'):
     if ic_only:  # if we only train the ICs, we load a pre-trained CNN
         load_epoch = -1
     else:  # if we train both ICs and the orig network, we load an untrained CNN
-        load_epoch = 0
+        load_epoch = 0 if args.override_cnn_to_tune is None else -1
+        # if we selected a cnn to tune, we load it trained
 
     for sdn_name in networks:
         print("Loading SDN", models_path, sdn_name)
@@ -149,7 +150,7 @@ def train_sdns(args, models_path, networks, ic_only=False, device='cpu'):
         if args.override_cnn_to_tune is not None:
             cnn_to_tune = args.override_cnn_to_tune
 
-        print("Finetuning", cnn_to_tune)
+        print("Finetuning", cnn_to_tune, "loading from epoch", load_epoch)
         sdn_model, _ = af.cnn_to_sdn(args, models_path, cnn_to_tune, sdn_params, load_epoch)  # load the CNN and convert it to a SDN
         arcs.save_model(args, sdn_model, sdn_params, models_path, sdn_name, epoch=0)  # save the resulting SDN
     train(args, models_path, networks, sdn=True, ic_only_sdn=ic_only, device=device)
