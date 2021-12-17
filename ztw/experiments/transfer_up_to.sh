@@ -7,7 +7,6 @@ for FROM_D in cifar10 cifar100;
 do
   for TO_D in cifar10 cifar100;
   do
-    TO_D=$FROM_D
     for UPTO in 2 4 6 8 10 12;
     do
       SUF=${FROM_D}_to_${TO_D}_upto_${UPTO}_rest_copied
