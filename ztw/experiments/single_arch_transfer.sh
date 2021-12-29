@@ -46,7 +46,7 @@ for transfer_dataset in cifar10 cifar100 ; do
       $cmd_base -t sdn_full --head_arch conv sdn_pool -d $transfer_dataset \
     --override_cnn_to_tune $base_net --stacking --detach_prev \
     --tag "${seed}_${dataset}_${arch}_sdn-ic-stacking-with-cnn-training_${dataset}_transfer_to_${transfer_dataset}" \
-    --suffix "transfer_from_${dataset}_sdn-ic-stacking"
+    --suffix "transfer_from_${dataset}_sdn-ic-stacking-with-cnn-training"
 
 #  for head_id in $(seq 0 $heads); do
 #    $cmd_base \
