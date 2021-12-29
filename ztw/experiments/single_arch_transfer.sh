@@ -58,6 +58,5 @@ for transfer_dataset in cifar10 cifar100 ; do
 #      --tag "${seed}_${dataset}_${arch}_sdn-ic-ensb-${head_id}_${dataset}_transfer_to_${transfer_dataset}" \
 #      --suffix "transfer_from_${dataset}_sdn-ic-stacking" \
 #      --heads all #&
-
-  done
+#  done
 done
