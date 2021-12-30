@@ -18,7 +18,7 @@ num_seeds=1
 max_iter=$(($num_seeds / 2))
 
 #for arch in resnet56 vgg16bn wideresnet32_4 mobilenet; do
-for arch in vgg16bn; do
+for arch in tv_resnet; do
   for dataset in cifar10 cifar100 ; do
     for i in $(seq 0 $max_iter); do
       seed1=$(($i + $seed_displcmt))
