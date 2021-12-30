@@ -346,7 +346,7 @@ if __name__ == '__main__':
     parser.add_argument('--head_shift', type=int, default=0)
     parser.add_argument('--lr_scaler', type=float, default=1.)
     parser.add_argument('--tag', type=str, help="Additional tag for neptune")
-    parser.add_argument('--suffix', type=str, help="Suffix for model name")
+    parser.add_argument('--suffix', default="", type=str, help="Suffix for model name")
     parser.add_argument('--relearn_final_layer', action='store_true')
     parser.add_argument("--override_cnn_to_tune", type=str, default=None, help="Override CNN to finetune in training")
     parser.add_argument("--freeze_cnn_up_to", type=int, default=None, help="Freeze cnn up to n-th block in CNN training")
