@@ -3,7 +3,7 @@ set -xe
 
 declare -A num_heads
 
-num_heads=( ["resnet56"]=27 ["vgg16bn"]=14 ["wideresnet32_4"]=15 ["mobilenet"]=13 ["tv_resnet"]=5 )
+num_heads=( ["resnet56"]=27 ["vgg16bn"]=14 ["wideresnet32_4"]=15 ["mobilenet"]=13 ["tv_resnet"]=4 )
 
 if [[ -n $3 ]]; then
   seed=$3
