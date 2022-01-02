@@ -34,11 +34,11 @@ else
   ztw_arg=""
 fi
 
-if [[ $dataset == "oct2017" ]]; then
-  $cmd_base -d $dataset -t cnn --relearn_final_layer --tag "${seed}_${base_net}"
-else
-  $cmd_base -d $dataset -t cnn --tag "${seed}_${base_net}"
-fi
+#if [[ $dataset == "oct2017" ]]; then
+#  $cmd_base -d $dataset -t cnn --relearn_final_layer --tag "${seed}_${base_net}"
+#else
+#  $cmd_base -d $dataset -t cnn --tag "${seed}_${base_net}"
+#fi
 
 
 for transfer_dataset in oct2017; do #cifar10 cifar100 ; do
