@@ -1,4 +1,5 @@
 from itertools import chain
+from typing import List
 
 import torch
 from torch import nn
@@ -125,3 +126,13 @@ class ResNet50_SDN(nn.Module):
             x = self.core_model.fc(x)
             outputs.append(x)
         return outputs
+
+    @property
+    def layers(self) -> List[nn.Module]:
+        cm = self.core_model
+        return [
+            cm.layer1,
+            cm.layer2,
+            cm.layer3,
+            cm.layer4
+        ]

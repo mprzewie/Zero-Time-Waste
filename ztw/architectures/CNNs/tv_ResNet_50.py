@@ -1,4 +1,5 @@
 from itertools import chain
+from typing import List
 
 from torch import nn
 from torchvision import models
@@ -39,3 +40,13 @@ class ResNet50(nn.Module):
         ord_modules.append(self.core_model.avgpool)
         ord_modules.append(self.core_model.fc)
         return chain.from_iterable(m.modules() for m in ord_modules)
+
+    @property
+    def layers(self) -> List[nn.Module]:
+        cm = self.core_model
+        return [
+            cm.layer1,
+            cm.layer2,
+            cm.layer3,
+            cm.layer4
+        ]
