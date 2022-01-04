@@ -4,15 +4,16 @@ set -xe
 #arch="vgg16bn"
 arch="tv_resnet"
 
-cmd_base="python train_networks.py -a $arch -s $seed --skip_train_logits --save_test_logits -t cnn"
+CMD="python train_networks.py -a $arch -s $seed --skip_train_logits --save_test_logits -t cnn"
 
 if [[ $arch == "tv_resnet" ]]; then
-  cmd_base="$cmd_base --heads quarter --head_arch conv_less_ch sdn_pool -p 4 --lr_scaler 2"
+  CMD="$CMD --heads quarter --head_arch conv_less_ch sdn_pool -p 4 --lr_scaler 2"
   ztw_arg="--detach_norm layernorm"
 else
-  cmd_base="$cmd_base --heads all"
+  CMD="$CMD --heads all"
   ztw_arg=""
 fi
+
 
 
 for FROM_D in cifar10 cifar100;
