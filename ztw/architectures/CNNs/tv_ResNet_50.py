@@ -45,7 +45,13 @@ class ResNet50(nn.Module):
     def layers(self) -> List[nn.Module]:
         cm = self.core_model
         return [
-            cm.layer1,
+            nn.Sequential(
+                cm.conv1,
+                cm.bn1,
+                cm.relu,
+                cm.maxpool,
+                cm.layer1,
+            ),
             cm.layer2,
             cm.layer3,
             cm.layer4
