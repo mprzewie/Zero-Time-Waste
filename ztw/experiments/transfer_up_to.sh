@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -xe
 
+seed=200
+
 #arch="vgg16bn"
 arch="tv_resnet"
 
