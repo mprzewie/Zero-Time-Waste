@@ -23,7 +23,7 @@ do
   CNN_TO_TUNE=${FROM_D}_${ARCH}_cnn
   for TO_D in hymenoptera; #oct2017 cifar10 cifar100 ;
   do
-    for UPTO in 1 2 4;
+    for UPTO in 1 2 3 4 5;
     do
       SUF_BASE=${FROM_D}_to_${TO_D}_${ARCH}_upto_${UPTO}
 
