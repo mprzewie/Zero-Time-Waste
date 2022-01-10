@@ -8,6 +8,7 @@ import os
 
 import neptune.new as neptune
 import torch
+torch.multiprocessing.set_sharing_strategy('file_system')
 
 import aux_funcs as af
 import network_architectures as arcs
