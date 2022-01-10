@@ -263,6 +263,8 @@ def get_task_params(task: str):
         return imagenet_params()
     elif task.startswith('oct2017'):
         return oct2017_params()
+    elif task.startswith("hymenoptera"):
+        return hymenoptera_params()
 
 
 def cifar10_params():
@@ -304,6 +306,13 @@ def oct2017_params():
     model_params['num_classes'] = 4
     return model_params
 
+def hymenoptera_params():
+    model_params = {}
+    model_params['task'] = 'hymenoptera'
+    model_params['input_size'] = 224
+    model_params['num_classes'] = 2
+    return model_params
+
 
 def get_lr_params(model_params, args=None):
     model_params['momentum'] = 0.9
@@ -320,7 +329,7 @@ def get_lr_params(model_params, args=None):
     if model_params['task'] == 'imagenet':
         model_params['epochs'] = 0
         model_params['milestones'] = []
-    elif model_params['task'] == 'oct2017':
+    elif model_params['task'] in ['oct2017' "hymenoptera"]:
         model_params['learning_rate'] = 0.01
         model_params['epochs'] = 20
         model_params['milestones'] = [5, 10, 15]
@@ -337,7 +346,7 @@ def get_lr_params(model_params, args=None):
             'learning_rate'] = 1e-5 * args.lr_scaler  # lr for full network training after sdn modification
         model_params['ic_only']['milestones'] = [20, 30]
         model_params['ic_only']['gammas'] = [0.1, 0.1]
-    elif model_params['task'] == 'oct2017':
+    elif model_params['task'] in ['oct2017', "hymenoptera"]:
         model_params['ic_only']['epochs'] = 20
         model_params['ic_only'][
             'learning_rate'] = 1e-5 * args.lr_scaler  # lr for full network training after sdn modification

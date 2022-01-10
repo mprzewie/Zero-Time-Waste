@@ -28,7 +28,7 @@ from torch.optim import SGD, Adam
 from torch.optim.lr_scheduler import _LRScheduler
 
 import network_architectures as arcs
-from data import CIFAR10, CIFAR100, ImageNet, TinyImagenet, OCT2017
+from data import CIFAR10, CIFAR100, ImageNet, TinyImagenet, OCT2017, Hymenoptera
 from profiler import profile, profile_sdn
 from architectures.SDNs.tv_ResNet_50_SDN import ResNet50_SDN
 
@@ -177,7 +177,7 @@ class InternalClassifier(nn.Module):
                     input_channels = output_channels
                     if layer_type == 'conv_less_ch':
                         output_channels = input_channels // 4
-                    if args.dataset == 'imagenet' or args.dataset == 'oct2017':
+                    if args.dataset in ['imagenet', 'oct2017', "hymenoptera"]:
                         if input_size > 8:
                             stride, padding = 2, 1
                             input_size = input_size // 2
@@ -317,6 +317,9 @@ def get_dataset(args, dataset, batch_size=128, add_trigger=False):
         return ImageNet(batch_size // 2)
     elif dataset == 'oct2017':
         return OCT2017(batch_size // 2)
+    elif dataset == "hymenoptera":
+        return Hymenoptera(batch_size // 2)
+
 
 
 def load_cifar10(args, batch_size, add_trigger=False):

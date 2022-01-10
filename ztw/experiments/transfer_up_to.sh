@@ -21,7 +21,7 @@ fi
 for FROM_D in cifar10 cifar100;
 do
   CNN_TO_TUNE=${FROM_D}_${ARCH}_cnn
-  for TO_D in oct2017 cifar10 cifar100 ;
+  for TO_D in hymenoptera; #oct2017 cifar10 cifar100 ;
   do
     for UPTO in 1 2 4;
     do

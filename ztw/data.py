@@ -271,6 +271,26 @@ class OCT2017:
         reinit_train_loaders(self, weights)
 
 
+class Hymenoptera(OCT2017):
+    def __init__(self, batch_size=64):
+        super().__init__(batch_size=batch_size)
+
+
+        # TODO fix hardcoded path
+        train_path = '/shared/sets/datasets/vision/hymenoptera_data/train'
+        test_path = '/shared/sets/datasets/vision/hymenoptera_data/val'
+        self.aug_trainset = datasets.ImageFolder(train_path, transform=self.augmented)
+        self.trainset = datasets.ImageFolder(train_path, transform=self.normalized)
+
+        self.weighted_loaders(None)
+
+        self.testset = datasets.ImageFolder(test_path, transform=self.normalized)
+        self.test_loader = torch.utils.data.DataLoader(self.testset,
+                                                       batch_size=batch_size,
+                                                       shuffle=False,
+                                                       num_workers=4)
+
+
 def get_mean_and_std(dataset):
     '''Compute the mean and std value of dataset.'''
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, num_workers=4)

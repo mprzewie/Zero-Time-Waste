@@ -41,7 +41,7 @@ fi
 #fi
 
 
-for transfer_dataset in oct2017; do #cifar10 cifar100 ; do
+for transfer_dataset in hymentoptera; do ##oct2017; do #cifar10 cifar100 ; do
   $cmd_base -t sdn_ic --head_arch conv sdn_pool -d $transfer_dataset \
     --override_cnn_to_tune $base_net \
     --tag "${seed}_${dataset}_${arch}_sdn-classic_${dataset}_transfer_to_${transfer_dataset}" \
