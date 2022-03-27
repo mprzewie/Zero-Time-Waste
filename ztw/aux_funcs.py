@@ -28,7 +28,7 @@ from torch.optim import SGD, Adam
 from torch.optim.lr_scheduler import _LRScheduler
 
 import network_architectures as arcs
-from data import CIFAR10, CIFAR100, ImageNet, TinyImagenet, OCT2017, Hymenoptera
+from data import CIFAR10, CIFAR100, ImageNet, TinyImagenet, OCT2017, Hymenoptera, SVHN
 from profiler import profile, profile_sdn
 from architectures.SDNs.tv_ResNet_50_SDN import ResNet50_SDN
 
@@ -319,8 +319,17 @@ def get_dataset(args, dataset, batch_size=128, add_trigger=False):
         return OCT2017(batch_size // 2)
     elif dataset == "hymenoptera":
         return Hymenoptera(batch_size // 2)
+    elif dataset == "svhn":
+        return load_svhn(args, batch_size, add_trigger)
 
 
+def load_svhn(args, batch_size, add_trigger=False):
+    return SVHN(
+        batch_size=batch_size,
+        add_trigger=add_trigger,
+        examples_num=args.examples_num,
+        validation=args.validation_dataset
+    )
 
 def load_cifar10(args, batch_size, add_trigger=False):
     cifar10_data = CIFAR10(batch_size=batch_size,

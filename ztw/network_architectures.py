@@ -265,7 +265,16 @@ def get_task_params(task: str):
         return oct2017_params()
     elif task.startswith("hymenoptera"):
         return hymenoptera_params()
+    elif task.startswith("svhn"):
+        return svhn_params()
 
+
+def svhn_params():
+    model_params = {}
+    model_params['task'] = 'svhn'
+    model_params['input_size'] = 32
+    model_params['num_classes'] = 10
+    return model_params
 
 def cifar10_params():
     model_params = {}

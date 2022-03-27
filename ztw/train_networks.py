@@ -5,6 +5,7 @@
 import argparse
 import copy
 import os
+import sys
 
 import neptune.new as neptune
 import torch
@@ -53,6 +54,7 @@ def train(args, models_path, untrained_models, sdn=False, run_ensb=False, ic_onl
         run = neptune.init(name=base_model,
                            source_files='*.py',
                            tags=tags)
+        run["cmd"] = f"python {' '.join(sys.argv)}"
         run['parameters'] = vars(args)
 
         args.run = run
@@ -295,7 +297,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', '-d', type=str,
-                        choices=['cifar10', 'cifar100', 'tinyimagenet', 'imagenet', 'oct2017', "hymenoptera"])
+                        choices=['cifar10', 'cifar100', 'tinyimagenet', 'imagenet', 'oct2017', "hymenoptera", "svhn"])
     parser.add_argument('--arch',
                         '-a',
                         type=str,
