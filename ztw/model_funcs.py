@@ -18,6 +18,7 @@ from torch.optim import SGD
 
 import aux_funcs as af
 import data
+from data import IWildCam
 
 from train_networks import get_logits
 
@@ -327,15 +328,22 @@ def sdn_train(args, model, data, epochs, optimization_params, lr_schedule_params
                         print('Loss: {}: '.format(total_loss))
                 scheduler.step()
 
-                top1_test, top5_test = sdn_test(model, data.test_loader, device)
-                for i, test_acc in enumerate(top1_test):
-                    args.run[f'run for head {i_head} test acc {i}'].log(test_acc, step=current_step)
-                print('Top1 Test accuracies: {}'.format(top1_test))
-                print('Top5 Test accuracies: {}'.format(top5_test))
-                end_time = time.time()
+                loaders = [
+                    ("", data.test_loader)
+                ]
+                if isinstance(data, IWildCam):
+                    loaders.append(("_ood", data.test_loader_ood))
 
-                metrics['test_top1_acc'].append(top1_test)
-                metrics['test_top5_acc'].append(top5_test)
+                for ld, loader in loaders:
+                    top1_test, top5_test = sdn_test(model, loader, device)
+                    for i, test_acc in enumerate(top1_test):
+                        args.run[f'run for head {i_head} test{ld} acc {i}'].log(float(test_acc), step=current_step)
+                    print(f'Top1 Test accuracies: {top1_test}')
+                    print(f'Top5 Test accuracies: {top5_test}')
+                    end_time = time.time()
+
+                    metrics[f'test_top1_acc{ld}'].append(top1_test)
+                    metrics[f'test_top5_acc{ld}'].append(top5_test)
 
                 top1_train, top5_train = sdn_test(model, get_loader(data, augment), device)
                 for i, train_acc in enumerate(top1_train):
@@ -410,15 +418,23 @@ def sdn_train(args, model, data, epochs, optimization_params, lr_schedule_params
                 # print("Cosine sim means!", np.mean(cosine_sims))
                 scheduler.step()
 
-                top1_test, top5_test = sdn_test(model, data.test_loader, device)
-                for i, test_acc in enumerate(top1_test):
-                    args.run[f'run {i_train} test acc {i}'].log(float(test_acc), step=current_step)
-                print('Top1 Test accuracies: {}'.format(top1_test))
-                print('Top5 Test accuracies: {}'.format(top5_test))
-                end_time = time.time()
+                loaders = [
+                    ("", data.test_loader)
+                ]
+                if isinstance(data, IWildCam):
+                    loaders.append(("_ood", data.test_loader_ood))
 
-                metrics['test_top1_acc'].append(top1_test)
-                metrics['test_top5_acc'].append(top5_test)
+                for ld, loader in loaders:
+
+                    top1_test, top5_test = sdn_test(model, loader, device)
+                    for i, test_acc in enumerate(top1_test):
+                        args.run[f'run {i_train} test{ld} acc {i}'].log(float(test_acc), step=current_step)
+                    print(f'Top1 Test accuracies: {top1_test}')
+                    print(f'Top5 Test accuracies: {top5_test}')
+                    end_time = time.time()
+
+                    metrics[f'test_top1_acc{ld}'].append(top1_test)
+                    metrics[f'test_top5_acc{ld}'].append(top5_test)
 
                 top1_train, top5_train = sdn_test(model, get_loader(data, augment), device)
                 for i, train_acc in enumerate(top1_train):
@@ -660,12 +676,24 @@ def cnn_train(args, model, data, epochs, optimization_params, lr_schedule_params
 
         end_time = time.time()
 
-        top1_test, top5_test = cnn_test(model, data.test_loader, device)
-        args.run['test acc'].log(float(top1_test), step=current_step)
-        print('Top1 Test accuracy: {}'.format(top1_test))
-        print('Top5 Test accuracy: {}'.format(top5_test))
-        metrics['test_top1_acc'].append(top1_test)
-        metrics['test_top5_acc'].append(top5_test)
+        loaders = [
+            ("", data.test_loader)
+        ]
+        if isinstance(data, IWildCam):
+            loaders.append(("_ood", data.test_loader_ood))
+
+        for ld, loader in loaders:
+
+            top1_test, top5_test = cnn_test(model, loader, device)
+            for i, test_acc in enumerate(top1_test):
+                args.run[f'test_acc{ld}'].log(float(test_acc), step=current_step)
+            print(f'Top1 Test accuracy: {top1_test}')
+            print(f'Top5 Test accuracy: {top5_test}')
+            end_time = time.time()
+
+            metrics[f'test_top1_acc{ld}'].append(top1_test)
+            metrics[f'test_top5_acc{ld}'].append(top5_test)
+
 
         top1_train, top5_train = cnn_test(model, train_loader, device)
         args.run['train acc'].log(float(top1_train), step=current_step)

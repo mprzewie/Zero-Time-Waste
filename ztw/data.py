@@ -4,11 +4,14 @@
 # use create_val_folder() function to convert original Tiny ImageNet structure to structure PyTorch expects
 
 import os
+from pathlib import Path
 
 import torch
+import wilds
 from PIL import Image
 from torch.utils.data import sampler, Subset
 from torchvision import datasets, transforms
+from wilds.datasets.iwildcam_dataset import IWildCamDataset
 
 
 class AddTrigger(object):
@@ -182,6 +185,42 @@ class ImageNet:
     def weighted_loaders(self, weights):
         reinit_train_loaders(self, weights)
 
+class IWildCam:
+    def __init__(self, batch_size=64, ood: bool=False):
+        self.batch_size = batch_size
+        self.img_size = 512
+        self.num_classes = 182
+
+        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        self.augmented = transforms.Compose(
+            [transforms.RandomResizedCrop(224),
+             transforms.RandomHorizontalFlip(),
+             transforms.ToTensor(), normalize])
+        self.normalized = transforms.Compose(
+            [transforms.Resize(256), transforms.CenterCrop(224), transforms.ToTensor(), normalize])
+
+        data_path = "/shared/sets/datasets/vision/WILDS"
+
+        iwildcam_dataset: IWildCamDataset = wilds.get_dataset(dataset="iwildcam", download=True, root=data_path)
+
+        self.aug_trainset = iwildcam_dataset.get_subset("train", transform=self.augmented)
+        self.trainset = iwildcam_dataset.get_subset("train", transform=self.normalized)
+
+        self.weighted_loaders(None)
+
+        self.testset_id = iwildcam_dataset.get_subset("id_test", transform=self.normalized)
+        self.testset_ood = iwildcam_dataset.get_subset("test", transform=self.normalized)
+        self.test_loader = torch.utils.data.DataLoader(self.testset_id,
+                                                       batch_size=batch_size,
+                                                       shuffle=False,
+                                                       num_workers=4)
+        self.test_loader_ood = torch.utils.data.DataLoader(self.testset_ood,
+                                                       batch_size=batch_size,
+                                                       shuffle=False,
+                                                       num_workers=4)
+
+    def weighted_loaders(self, weights):
+        reinit_train_loaders(self, weights)
 
 class ImageFolderWithPaths(datasets.ImageFolder):
     def __getitem__(self, index):
@@ -275,7 +314,6 @@ class Hymenoptera(OCT2017):
     def __init__(self, batch_size=64):
         super().__init__(batch_size=batch_size)
 
-
         # TODO fix hardcoded path
         train_path = '/shared/sets/datasets/vision/hymenoptera_data/train'
         test_path = '/shared/sets/datasets/vision/hymenoptera_data/val'
@@ -289,6 +327,7 @@ class Hymenoptera(OCT2017):
                                                        batch_size=batch_size,
                                                        shuffle=False,
                                                        num_workers=4)
+
 
 
 def get_mean_and_std(dataset):

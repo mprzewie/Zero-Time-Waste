@@ -265,6 +265,8 @@ def get_task_params(task: str):
         return oct2017_params()
     elif task.startswith("hymenoptera"):
         return hymenoptera_params()
+    elif task.startswith("iwildcam"):
+        return iwildcam_params()
 
 
 def cifar10_params():
@@ -290,6 +292,12 @@ def tiny_imagenet_params():
     model_params['num_classes'] = 200
     return model_params
 
+def iwildcam_params():
+    model_params = {}
+    model_params['task'] = 'iwildcam'
+    model_params['input_size'] = 512
+    model_params['num_classes'] = 182
+    return model_params
 
 def imagenet_params():
     model_params = {}
