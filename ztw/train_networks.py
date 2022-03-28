@@ -297,7 +297,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', '-d', type=str,
-                        choices=['cifar10', 'cifar100', 'tinyimagenet', 'imagenet', 'oct2017', "hymenoptera", "iwildcam"])
+                        choices=['cifar10', 'cifar100', 'tinyimagenet', 'imagenet', 'oct2017', "hymenoptera", "iwildcam", "svhn"])
     parser.add_argument('--arch',
                         '-a',
                         type=str,
