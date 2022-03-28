@@ -61,6 +61,59 @@ def reinit_train_loaders(dataset, weights=None):
                                                               shuffle=False,
                                                               num_workers=8)
 
+class SVHN:
+    def __init__(self, batch_size=128, add_trigger=False, examples_num=None, validation=False):
+        self.batch_size = batch_size
+        self.img_size = 32
+        self.num_classes = 10
+        self.num_test = 26032
+        self.num_train = 73257
+
+        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        self.augmented = transforms.Compose(
+            [transforms.RandomCrop(32, padding=4),
+             transforms.ToTensor(), normalize])
+
+        self.normalized = transforms.Compose([transforms.ToTensor(), normalize])
+
+        self.aug_trainset = datasets.SVHN(root='./data', split="train", download=True, transform=self.augmented)
+        self.trainset = datasets.SVHN(root='./data', split="train", download=True, transform=self.normalized)
+        if examples_num is not None:
+            if validation:
+                self.aug_trainset = Subset(self.aug_trainset, list(range(examples_num, len(self.trainset))))
+                self.trainset = Subset(self.trainset, list(range(examples_num, len(self.trainset))))
+            else:
+                self.aug_trainset = Subset(self.aug_trainset, list(range(examples_num)))
+                self.trainset = Subset(self.trainset, list(range(examples_num)))
+
+        print(f"Len of trainset: {len(self.trainset)}, len of aug trainset: {len(self.aug_trainset)}")
+
+        self.weighted_loaders(None)
+
+        self.testset = datasets.SVHN(root='./data', split="test", download=True, transform=self.normalized)
+        self.test_loader = torch.utils.data.DataLoader(self.testset,
+                                                       batch_size=batch_size,
+                                                       shuffle=False,
+                                                       num_workers=4)
+
+        # add trigger to the test set samples
+        # for the experiments on the backdoored CNNs and SDNs
+        #  uncomment third line to measure backdoor attack success, right now it measures standard accuracy
+        if add_trigger:
+            self.trigger_transform = transforms.Compose([AddTrigger(), transforms.ToTensor(), normalize])
+            self.trigger_test_set = datasets.SVHN(root='./data',
+                                                     split="test",
+                                                     download=True,
+                                                     transform=self.trigger_transform)
+            # self.trigger_test_set.test_labels = [5] * self.num_test
+            self.trigger_test_loader = torch.utils.data.DataLoader(self.trigger_test_set,
+                                                                   batch_size=batch_size,
+                                                                   shuffle=False,
+                                                                   num_workers=4)
+
+    def weighted_loaders(self, weights):
+        reinit_train_loaders(self, weights)
+
 
 class CIFAR10:
     def __init__(self, batch_size=128, add_trigger=False, examples_num=None, validation=False):
