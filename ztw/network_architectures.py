@@ -23,6 +23,7 @@ from architectures.SDNs.VGG_SDN import VGG_SDN
 from architectures.SDNs.WideResNet_SDN import WideResNet_SDN
 from architectures.SDNs.tv_ResNet_50_SDN import ResNet50_SDN
 from architectures.weighted_avg_model import WeightedAverage
+from data import IWILDCAM_SIZE
 
 
 def canonical_name(args, model_name):
@@ -304,7 +305,7 @@ def tiny_imagenet_params():
 def iwildcam_params():
     model_params = {}
     model_params['task'] = 'iwildcam'
-    model_params['input_size'] = 512
+    model_params['input_size'] = IWILDCAM_SIZE
     model_params['num_classes'] = 182
     return model_params
 

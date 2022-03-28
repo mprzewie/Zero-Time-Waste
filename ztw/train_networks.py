@@ -24,7 +24,7 @@ def get_logits(args, model, loader, device='cpu'):
     all_last_logits = []
     all_labels = []
     with torch.no_grad():
-        for X, y in loader:
+        for X, y, *_ in loader:
             X = X.to(device)
             # y = y.to(device)
             output = model(X)

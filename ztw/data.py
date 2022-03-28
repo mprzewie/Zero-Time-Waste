@@ -238,23 +238,24 @@ class ImageNet:
     def weighted_loaders(self, weights):
         reinit_train_loaders(self, weights)
 
+IWILDCAM_SIZE = 224
 class IWildCam:
-    def __init__(self, batch_size=64, ood: bool=False):
+    def __init__(self, batch_size=64):
         self.batch_size = batch_size
-        self.img_size = 512
+        self.img_size = IWILDCAM_SIZE
         self.num_classes = 182
 
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         self.augmented = transforms.Compose(
-            [transforms.RandomResizedCrop(224),
+            [transforms.RandomResizedCrop(self.img_size),
              transforms.RandomHorizontalFlip(),
              transforms.ToTensor(), normalize])
         self.normalized = transforms.Compose(
-            [transforms.Resize(256), transforms.CenterCrop(224), transforms.ToTensor(), normalize])
+            [transforms.Resize(int(self.img_size * 1.35)), transforms.CenterCrop(self.img_size), transforms.ToTensor(), normalize])
 
         data_path = "/shared/sets/datasets/vision/WILDS"
 
-        iwildcam_dataset: IWildCamDataset = wilds.get_dataset(dataset="iwildcam", download=True, root=data_path)
+        iwildcam_dataset: IWildCamDataset = wilds.get_dataset(dataset="iwildcam", download=True, root_dir=data_path)
 
         self.aug_trainset = iwildcam_dataset.get_subset("train", transform=self.augmented)
         self.trainset = iwildcam_dataset.get_subset("train", transform=self.normalized)

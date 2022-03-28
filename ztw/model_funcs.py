@@ -21,10 +21,11 @@ import data
 from data import IWildCam
 
 from train_networks import get_logits
+from tqdm import tqdm
+from collections import defaultdict
 
 # fast ugly hack
 current_step = 0
-
 
 def sdn_training_step(args, optimizer, model, coeffs, batch, device, run_i=None):
     global current_step
@@ -298,6 +299,7 @@ def sdn_train(args, model, data, epochs, optimization_params, lr_schedule_params
         'train_top5_acc': [],
         'lrs': []
     }
+    metrics = defaultdict(list, metrics)
     if model.ic_only:
         print('sdn will be converted from a pre-trained CNN...  (The IC-only training)')
     else:
@@ -338,8 +340,8 @@ def sdn_train(args, model, data, epochs, optimization_params, lr_schedule_params
                     top1_test, top5_test = sdn_test(model, loader, device)
                     for i, test_acc in enumerate(top1_test):
                         args.run[f'run for head {i_head} test{ld} acc {i}'].log(float(test_acc), step=current_step)
-                    print(f'Top1 Test accuracies: {top1_test}')
-                    print(f'Top5 Test accuracies: {top5_test}')
+                    print(f'Top1 Test{ld} accuracies: {top1_test}')
+                    print(f'Top5 Test{ld} accuracies: {top5_test}')
                     end_time = time.time()
 
                     metrics[f'test_top1_acc{ld}'].append(top1_test)
@@ -429,8 +431,8 @@ def sdn_train(args, model, data, epochs, optimization_params, lr_schedule_params
                     top1_test, top5_test = sdn_test(model, loader, device)
                     for i, test_acc in enumerate(top1_test):
                         args.run[f'run {i_train} test{ld} acc {i}'].log(float(test_acc), step=current_step)
-                    print(f'Top1 Test accuracies: {top1_test}')
-                    print(f'Top5 Test accuracies: {top5_test}')
+                    print(f'Top1 Test{ld} accuracies: {top1_test}')
+                    print(f'Top5 Test{ld} accuracies: {top5_test}')
                     end_time = time.time()
 
                     metrics[f'test_top1_acc{ld}'].append(top1_test)
@@ -646,6 +648,7 @@ def cnn_train(args, model, data, epochs, optimization_params, lr_schedule_params
         'train_top5_acc': [],
         'lrs': []
     }
+    metrics = defaultdict(list, metrics)
     if args.freeze_cnn_up_to is not None:
         print(f"Freezing the CNN up to block # {args.freeze_cnn_up_to}")
         af.freeze(model, ("cnn_up_to", args.freeze_cnn_up_to))
@@ -655,6 +658,7 @@ def cnn_train(args, model, data, epochs, optimization_params, lr_schedule_params
         af.freeze(model, 'final_layer_only')
 
     optimizer, scheduler = af.get_full_optimizer(model, optimization_params, lr_schedule_params)
+    dl_len = len(data.trainset) // data.batch_size
 
     for epoch in range(1, epochs + 1):
 
@@ -670,7 +674,8 @@ def cnn_train(args, model, data, epochs, optimization_params, lr_schedule_params
         print('Epoch: {}/{}'.format(epoch, epochs))
         print('Cur lr: {}'.format(cur_lr))
         args.run['learning rate'].log(cur_lr, step=current_step)
-        for x, y in train_loader:
+
+        for x, y, *_ in tqdm(train_loader, total=dl_len):
             cnn_training_step(args, model, optimizer, x, y, device)
         scheduler.step()
 
@@ -849,7 +854,7 @@ def run_ensb_train(args, model, data, epochs, optimization_params, lr_schedule_p
         model.train()
 
         avg_loss = 0.
-        for x, y in train_loader:
+        for x, y, *_ in train_loader:
             x = x[:, :model.head_idx + 1].to(device)
             outputs = model(x)
             loss_val = loss_fn(outputs, y.to(device)) + args.alpha * torch.sum((model.weight - model.weight.mean()) ** 2)

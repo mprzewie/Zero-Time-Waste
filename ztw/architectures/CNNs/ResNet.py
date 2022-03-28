@@ -65,8 +65,9 @@ class ResNet(nn.Module):
 
         if self.input_size == 32:  # cifar10 and cifar100
             init_conv.append(nn.Conv2d(3, self.in_channels, kernel_size=3, stride=1, padding=1, bias=False))
-        elif self.input_size == 64:  # tiny imagenet
+        elif self.input_size >= 64:  # tiny imagenet
             init_conv.append(nn.Conv2d(3, self.in_channels, kernel_size=3, stride=2, padding=1, bias=False))
+
 
         init_conv.append(nn.BatchNorm2d(self.in_channels))
         init_conv.append(nn.ReLU(inplace=True))
@@ -80,7 +81,8 @@ class ResNet(nn.Module):
 
         end_layers = []
 
-        end_layers.append(nn.AvgPool2d(kernel_size=8))
+        # end_layers.append(nn.AvgPool2d(kernel_size=8))
+        end_layers.append(nn.AdaptiveAvgPool2d((1,1)))
         end_layers.append(af.Flatten())
         end_layers.append(nn.Linear(64 * self.block.expansion, self.num_classes))
         self.end_layers = nn.Sequential(*end_layers)

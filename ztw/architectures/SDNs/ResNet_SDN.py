@@ -135,7 +135,10 @@ class ResNet_SDN(nn.Module):
 
         end_layers = []
 
-        end_layers.append(nn.AvgPool2d(kernel_size=8))
+        # end_layers.append(nn.AvgPool2d(kernel_size=8))
+        end_layers.append(nn.AdaptiveAvgPool2d((1,1)))
+
+
         end_layers.append(af.Flatten())
         end_layers.append(nn.Linear(64 * self.block.expansion, self.num_classes))
         self.end_layers = nn.Sequential(*end_layers)
