@@ -16,15 +16,16 @@ import network_architectures as arcs
 from architectures.CNNs.VGG import VGG
 from architectures.weighted_avg_model import WeightedAverage
 from profiler import profile, profile_sdn
+from data import IWildCam
+from tqdm import tqdm
 
-
-def get_logits(args, model, loader, device='cpu'):
+def get_logits(args, model, loader, device='cpu', tqdm_name: str = ""):
     model.eval()
     all_logits = []
     all_last_logits = []
     all_labels = []
     with torch.no_grad():
-        for X, y, *_ in loader:
+        for X, y, *_ in tqdm(loader, desc=tqdm_name):
             X = X.to(device)
             # y = y.to(device)
             output = model(X)
@@ -36,6 +37,7 @@ def get_logits(args, model, loader, device='cpu'):
                 all_logits.append(stacked_output.detach().cpu())
                 all_last_logits.append(output[-1].detach().cpu())
             all_labels.append(y.detach().cpu())
+            break
     all_logits = torch.cat(all_logits, 0)
     all_last_logits = torch.cat(all_last_logits, 0)
     all_labels = torch.cat(all_labels, 0)
@@ -59,6 +61,7 @@ def train(args, models_path, untrained_models, sdn=False, run_ensb=False, ic_onl
 
         args.run = run
         trained_model, model_params = arcs.load_model(args, models_path, base_model, 0)
+
         print(model_params)
         dataset = af.get_dataset(args, model_params['task'])
 
@@ -88,6 +91,7 @@ def train(args, models_path, untrained_models, sdn=False, run_ensb=False, ic_onl
         trained_model_name = base_model
 
         trained_model.to(device)
+
         results = trained_model.train_func(args,
                                            trained_model,
                                            dataset,
@@ -100,6 +104,7 @@ def train(args, models_path, untrained_models, sdn=False, run_ensb=False, ic_onl
             # TODO: fix this
             train_logits = trained_model.train_logits
             test_logits = trained_model.test_logits
+            test_logits_ood = trained_model.test_logits_ood
         else:
             model_params['train_top1_acc'] = results['train_top1_acc']
             model_params['test_top1_acc'] = results['test_top1_acc']
@@ -107,10 +112,13 @@ def train(args, models_path, untrained_models, sdn=False, run_ensb=False, ic_onl
             model_params['test_top5_acc'] = results['test_top5_acc']
             model_params['lrs'] = results['lrs']
             if not args.skip_train_logits:
-                train_logits = get_logits(args, trained_model, dataset.eval_train_loader, device=device)
+                train_logits = get_logits(args, trained_model, dataset.eval_train_loader, device=device, tqdm_name="train logits")
             else:
                 train_logits = None
-            test_logits = get_logits(args, trained_model, dataset.test_loader, device=device)
+            test_logits = get_logits(args, trained_model, dataset.test_loader, device=device, tqdm_name="test logits")
+            test_logits_ood = None
+            if isinstance(dataset, IWildCam):
+                test_logits_ood = get_logits(args, trained_model, dataset.test_loader_ood, device=device, tqdm_name="test logits ood")
             example_x = next(iter(dataset.test_loader))
 
         if sdn:
@@ -134,6 +142,7 @@ def train(args, models_path, untrained_models, sdn=False, run_ensb=False, ic_onl
                         epoch=-1,
                         train_outputs=train_logits,
                         test_outputs=test_logits,
+                        test_outputs_ood=test_logits_ood,
                         total_ops=output_total_ops,
                         total_params=output_total_params)
 
@@ -171,8 +180,6 @@ def train_run_ensb(args, models_path, networks, ic_only=False, device='cpu'):
         model_params = arcs.get_net_params(args, model_params['network_type'], model_params['task'])
         dataset = af.get_dataset(args, model_params['task'])
         orig_model_name = model_name
-        print("ORIG MODEL NAME", orig_model_name)
-
         base_model, _ = arcs.load_model(args, models_path, model_name, epoch=load_epoch)
         base_model.to(device)
         base_model.eval()
@@ -183,11 +190,23 @@ def train_run_ensb(args, models_path, networks, ic_only=False, device='cpu'):
         # train_loader = dataset.subset_train_loader
 
         train_logits, train_last_logits, train_labels = get_logits(args, base_model,
-                                                                   train_loader, device=device)
-        test_logits, test_last_logits, test_labels = get_logits(args, base_model,
-                                                                dataset.test_loader, device=device)
+                                                                   train_loader, device=device, tqdm_name="train logits")
+        test_logits, test_last_logits, test_labels = get_logits(
+            args, base_model,  dataset.test_loader, device=device, tqdm_name="test logits"
+        )
 
+        test_logits_ood, test_last_logits_ood, test_labels_ood = None, None, None
+        if isinstance(dataset, IWildCam):
+            test_logits_ood, test_last_logits_ood, test_labels_ood = get_logits(
+                args, base_model, dataset.test_loader_ood, device=device, tqdm_name="test logits ood"
+            )
+
+        num_logits = train_logits.shape[1] + 1
         for head_idx in args.head_ids:
+            if head_idx >= num_logits:
+                print(f"Omitting head {head_idx} because {head_idx=} >= {num_logits=}")
+                continue
+
             model_name = f"{orig_model_name}_add{args.run_ensb_type}_rensb_head_{head_idx}"
             model_params = copy.deepcopy(model_params)
 
@@ -196,12 +215,19 @@ def train_run_ensb(args, models_path, networks, ic_only=False, device='cpu'):
 
             model_params['input_dim'] = input_dim
             model_params['output_dim'] = out_dim
+
             model_params['train_logits'] = train_logits
             model_params['train_last_logits'] = train_last_logits
             model_params['train_labels'] = train_labels
+
             model_params['test_logits'] = test_logits
             model_params['test_last_logits'] = test_last_logits
             model_params['test_labels'] = test_labels
+
+            model_params["test_logits_ood"] = test_logits_ood
+            model_params["test_last_logits_ood"] = test_last_logits_ood
+            model_params["test_labels_ood"] = test_labels_ood
+
             model_params['head_idx'] = head_idx
             model_params['input_type'] = 'probs' if args.run_ensb_type != 'geometric' else 'log_probs'
             model_params['softmax'] = False

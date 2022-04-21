@@ -17,11 +17,22 @@ class WeightedAverage(nn.Module):
         self.test_logits = params['test_logits']
         self.test_last_logits = params['test_last_logits']
         self.test_labels = params['test_labels']
+
+        self.test_logits_ood = params.get("test_logits_ood")
+        self.test_last_logits_ood = params.get("test_last_logits_ood")
+        self.test_labels_ood = params.get("test_labels_ood")
+
         self.num_classes = params['num_classes']
         self.weight = nn.Parameter(
             torch.normal(0, 0.01, size=(self.input_dim // self.num_classes,), requires_grad=True))
         self.bias = nn.Parameter(torch.zeros(size=(self.output_dim,)))
+
         self.num_heads = self.input_dim // self.num_classes
+        print("================")
+        print((self.input_dim, self.num_classes), self.input_dim // self.num_classes, self.input_dim / self.num_classes)
+        print("================")
+
+
         self.softmax = params['softmax']
         self.ensemble_mode = params['ensemble_mode']
         self.train_func = mf.run_ensb_train
@@ -37,7 +48,10 @@ class WeightedAverage(nn.Module):
             resized_weight = torch.exp(self.weight.view(1, -1, 1))
             if self.softmax:
                 resized_weight = resized_weight.softmax(1)
+
+            print([t.shape for t in [x, resized_weight]])
             x = x * resized_weight
+
             return x.mean(1) + self.bias
         elif self.ensemble_mode == 'standard':
             return x.mean(1).log()

@@ -120,7 +120,7 @@ def create_vgg16bn(args, models_path, task, save_type, get_params=False):
     model_params = get_task_params(task)
     if model_params['input_size'] == 32:
         model_params['fc_layers'] = [512, 512]
-    elif model_params['input_size'] == 64:
+    elif model_params['input_size'] >= 64:
         model_params['fc_layers'] = [2048, 1024]
 
     model_params['conv_channels'] = [64, 64, 128, 128, 256, 256, 256, 512, 512, 512, 512, 512, 512]
@@ -140,7 +140,7 @@ def create_vgg16bn(args, models_path, task, save_type, get_params=False):
         model_params['add_ic'] = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1]
     args_model_params(args, model_params)
 
-    get_lr_params(model_params)
+    get_lr_params(model_params, args)
 
     if get_params:
         return model_params
@@ -172,7 +172,7 @@ def create_resnet56(args, models_path, task, save_type, get_params=False):
     model_params['init_weights'] = True
     args_model_params(args, model_params)
 
-    get_lr_params(model_params)
+    get_lr_params(model_params, args)
 
     if get_params:
         return model_params
@@ -344,9 +344,13 @@ def get_lr_params(model_params, args=None):
         model_params['weight_decay'] = 0.0001
 
     model_params['learning_rate'] = 0.1
-    if model_params['task'] == 'imagenet':
-        model_params['epochs'] = 0
-        model_params['milestones'] = []
+    if model_params['task'] in ['imagenet', 'iwildcam']:
+        model_params['epochs'] = 50
+        model_params['milestones'] = [35, 60, 85]
+
+        if model_params["network_type"] in ["vgg16bn"]:
+            model_params['learning_rate'] = 0.01
+
     elif model_params['task'] in ['oct2017' "hymenoptera"]:
         model_params['learning_rate'] = 0.01
         model_params['epochs'] = 20
@@ -358,10 +362,9 @@ def get_lr_params(model_params, args=None):
 
     # SDN ic_only training params
     model_params['ic_only'] = {}
-    if model_params['task'] == 'imagenet':
+    if model_params['task'] in ['imagenet', 'iwildcam']:
         model_params['ic_only']['epochs'] = 40
-        model_params['ic_only'][
-            'learning_rate'] = 1e-5 * args.lr_scaler  # lr for full network training after sdn modification
+        model_params['ic_only']['learning_rate'] = 1e-5 * args.lr_scaler  # lr for full network training after sdn modification
         model_params['ic_only']['milestones'] = [20, 30]
         model_params['ic_only']['gammas'] = [0.1, 0.1]
     elif model_params['task'] in ['oct2017', "hymenoptera"]:
@@ -389,6 +392,7 @@ def save_model(args,
                epoch=-1,
                train_outputs=None,
                test_outputs=None,
+               test_outputs_ood=None,
                total_ops=None,
                total_params=None):
     print(f'Saving model to {models_path}, epoch {epoch}')
@@ -442,17 +446,22 @@ def save_model(args,
             neptune.log_artifact(f'{network_path}/train_last_logits.pt', 'train_last_logits')
             neptune.log_artifact(f'{network_path}/train_labels.pt', 'train_labels')
 
-    if test_outputs is not None:
-        logits, last_logits, labels = test_outputs
-        print(f'Saving test logits to local filesystem...')
-        torch.save(logits, f'{network_path}/test_logits.pt')
-        torch.save(last_logits, f'{network_path}/test_last_logits.pt')
-        torch.save(labels, f'{network_path}/test_labels.pt')
-        if args.save_test_logits:
-            print(f'Saving test logits to neptune...')
-            args.run['artifacts/test_logits'].upload(f'{network_path}/test_logits.pt')
-            args.run['artifacts/test_last_logits'].upload(f'{network_path}/test_last_logits.pt')
-            args.run['artifacts/test_labels'].upload(f'{network_path}/test_labels.pt')
+    for postfix, outputs in [
+        ("", test_outputs),
+        ("_ood", test_outputs_ood)
+    ]:
+        if outputs is not None:
+            print("post", postfix, type(outputs))
+            logits, last_logits, labels = outputs
+            print(f'Saving test logits to local filesystem...')
+            torch.save(logits, f'{network_path}/test_logits{postfix}.pt')
+            torch.save(last_logits, f'{network_path}/test_last_logits{postfix}.pt')
+            torch.save(labels, f'{network_path}/test_labels{postfix}.pt')
+            if args.save_test_logits:
+                print(f'Saving test logits{postfix} to neptune...')
+                args.run[f'artifacts/test_logits{postfix}'].upload(f'{network_path}/test_logits{postfix}.pt')
+                args.run[f'artifacts/test_last_logits{postfix}'].upload(f'{network_path}/test_last_logits{postfix}.pt')
+                args.run[f'artifacts/test_labels{postfix}'].upload(f'{network_path}/test_labels{postfix}.pt')
 
     if hasattr(model, 'classifier_weights'):
         classifier_weights = model.classifier_weights
@@ -484,6 +493,11 @@ def load_model(args, models_path, model_name, epoch=0):
     network_type = model_params['network_type']
 
     if architecture == 'WeightedAverage':
+        from pprint import pprint
+        pprint({
+            k: type(v)
+            for (k,v) in model_params.items()
+        })
         model = WeightedAverage(args, model_params)
     elif architecture == 'sdn' or 'sdn' in model_name:
 

@@ -744,7 +744,7 @@ def cnn_test(model, loader, device='cpu'):
     # top5 = data.AverageMeter()
 
     with torch.no_grad():
-        for batch in loader:
+        for batch in tqdm(loader, "cnn test"):
             b_x = batch[0].to(device)
             b_y = batch[1].to(device)
             output = model(b_x)
@@ -811,17 +811,29 @@ def run_ensb_train(args, model, data, epochs, optimization_params, lr_schedule_p
     test_logits = torch.cat([test_logits, test_last_logits], 1)
     test_labels = model.test_labels.cpu()
 
+    if model.test_logits_ood is not None:
+        test_logits_ood =  model.test_logits_ood[:, :, 0].cpu()
+        test_last_logits_ood = model.test_last_logits_ood.view(-1, 1, model.num_classes).cpu()
+        test_logits_ood = torch.cat([test_logits_ood, test_last_logits_ood], 1)
+        test_labels_ood = model.test_labels_ood.cpu()
+    else:
+        test_logits_ood = None
+        test_labels_ood = None
+
     model = model.to(device)
 
     if model.input_type == "logits":
         train_input = train_logits
         test_input = test_logits
+        test_input_ood = test_logits_ood
     elif model.input_type == "probs":
         train_input = train_logits.softmax(-1)
         test_input = test_logits.softmax(-1)
+        test_input_ood = test_logits_ood.softmax(-1) if test_logits_ood is not None else None
     elif model.input_type == "log_probs":
         train_input = train_logits.log_softmax(-1)
         test_input = test_logits.log_softmax(-1)
+        test_input_ood = test_logits_ood.log_softmax(-1) if test_logits_ood is not None else None
 
     if args.run_ensb_dataset == "test":
         epochs = epochs * (len(train_input) // 1000)  # Keep the same number of updates
@@ -833,6 +845,7 @@ def run_ensb_train(args, model, data, epochs, optimization_params, lr_schedule_p
         epochs = 10
 
     test_base_accs = (test_input.argmax(-1).squeeze() == test_labels.view(-1, 1)).float().mean(0).tolist()
+    test_ood_base_accs = (test_input_ood.argmax(-1).squeeze() == test_labels_ood.view(-1, 1)).float().mean(0).tolist() if test_input_ood is not None else None
     train_base_accs = (train_input.argmax(-1).squeeze() == train_labels.view(-1, 1)).float().mean(0).tolist()
 
     lr = optimization_params[0]
@@ -855,7 +868,9 @@ def run_ensb_train(args, model, data, epochs, optimization_params, lr_schedule_p
 
         avg_loss = 0.
         for x, y, *_ in train_loader:
+            print("pre", x.shape)
             x = x[:, :model.head_idx + 1].to(device)
+            print("post", x.shape)
             outputs = model(x)
             loss_val = loss_fn(outputs, y.to(device)) + args.alpha * torch.sum((model.weight - model.weight.mean()) ** 2)
             avg_loss += loss_val.cpu().item()
@@ -871,9 +886,10 @@ def run_ensb_train(args, model, data, epochs, optimization_params, lr_schedule_p
             acc = (scaled_preds == train_labels).float().mean()
 
             x = train_input[:, :model.head_idx + 1]
-            test_inp = test_input[:, :model.head_idx + 1]
             scaled_preds = model(x).argmax(1)
             acc = (scaled_preds == train_labels).float().mean(0)
+
+            test_inp = test_input[:, :model.head_idx + 1]
 
             test_scaled_preds = model(test_inp).argmax(1)
             test_acc = (test_scaled_preds == test_labels).float().mean(0)
@@ -882,6 +898,16 @@ def run_ensb_train(args, model, data, epochs, optimization_params, lr_schedule_p
             args.run[f'head_{model.head_idx}_train_loss'].log(avg_loss / len(train_loader), step=epoch)
             args.run[f'head_{model.head_idx}_train_acc'].log(acc.item(), step=epoch)
             args.run[f'head_{model.head_idx}_test_acc'].log(test_acc.item(), step=epoch)
+
+            if test_input_ood is not None:
+                test_inp_ood = test_input_ood[:, :model.head_idx + 1]
+
+                test_scaled_preds_ood = model(test_inp_ood).argmax(1)
+                test_acc_ood = (test_scaled_preds_ood == test_labels_ood).float().mean(0)
+                print("OOD", test_acc_ood)
+                args.run[f'head_{model.head_idx}_test_acc_ood'].log(test_acc_ood.item(), step=epoch)
+            else:
+                test_acc_ood = None
             model = model.cuda()
 
         epoch_time = int(time.time() - start_time)
@@ -899,7 +925,11 @@ def run_ensb_train(args, model, data, epochs, optimization_params, lr_schedule_p
     model.train_logits = (new_train_logits, torch.tensor(0), train_labels.cpu())
     model.test_logits = (new_test_logits, torch.tensor(0), test_labels.cpu())
 
-    print("Test Base accs, ", test_base_accs[model.head_idx], "Test Ensembled acc", test_acc)
+    if test_input_ood is not None:
+        new_test_logits_ood = model(test_input_ood[:, :model.head_idx + 1]).cpu()
+        model.test_logits_ood = (new_test_logits_ood, torch.tensor(0), test_labels_ood.cpu())
+
+    print("Test Base accs, ", test_base_accs[model.head_idx], "Test Ensembled acc", test_acc, "OOD", test_acc_ood)
 
     results['weights'] = model.weight
     results['bias'] = model.bias
